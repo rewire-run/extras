@@ -53,10 +53,10 @@ pub mod rewire_service_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
     pub struct RewireServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -100,8 +100,9 @@ pub mod rewire_service_client {
                     <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::Body>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::Body>,
+            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             RewireServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -139,12 +140,22 @@ pub mod rewire_service_client {
         pub async fn get_info(
             &mut self,
             request: impl tonic::IntoRequest<super::GetInfoRequest>,
-        ) -> std::result::Result<tonic::Response<super::GetInfoResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::GetInfoResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/rewire.v1.RewireService/GetInfo");
+            let path = http::uri::PathAndQuery::from_static(
+                "/rewire.v1.RewireService/GetInfo",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("rewire.v1.RewireService", "GetInfo"));
@@ -153,12 +164,22 @@ pub mod rewire_service_client {
         pub async fn heartbeat(
             &mut self,
             request: impl tonic::IntoRequest<super::HeartbeatRequest>,
-        ) -> std::result::Result<tonic::Response<super::HeartbeatResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+        ) -> std::result::Result<
+            tonic::Response<super::HeartbeatResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/rewire.v1.RewireService/Heartbeat");
+            let path = http::uri::PathAndQuery::from_static(
+                "/rewire.v1.RewireService/Heartbeat",
+            );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(GrpcMethod::new("rewire.v1.RewireService", "Heartbeat"));
@@ -173,7 +194,7 @@ pub mod rewire_service_server {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with RewireServiceServer.
@@ -186,7 +207,10 @@ pub mod rewire_service_server {
         async fn heartbeat(
             &self,
             request: tonic::Request<super::HeartbeatRequest>,
-        ) -> std::result::Result<tonic::Response<super::HeartbeatResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::HeartbeatResponse>,
+            tonic::Status,
+        >;
     }
     #[derive(Debug)]
     pub struct RewireServiceServer<T> {
@@ -209,7 +233,10 @@ pub mod rewire_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -264,9 +291,15 @@ pub mod rewire_service_server {
                 "/rewire.v1.RewireService/GetInfo" => {
                     #[allow(non_camel_case_types)]
                     struct GetInfoSvc<T: RewireService>(pub Arc<T>);
-                    impl<T: RewireService> tonic::server::UnaryService<super::GetInfoRequest> for GetInfoSvc<T> {
+                    impl<
+                        T: RewireService,
+                    > tonic::server::UnaryService<super::GetInfoRequest>
+                    for GetInfoSvc<T> {
                         type Response = super::GetInfoResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::GetInfoRequest>,
@@ -303,9 +336,15 @@ pub mod rewire_service_server {
                 "/rewire.v1.RewireService/Heartbeat" => {
                     #[allow(non_camel_case_types)]
                     struct HeartbeatSvc<T: RewireService>(pub Arc<T>);
-                    impl<T: RewireService> tonic::server::UnaryService<super::HeartbeatRequest> for HeartbeatSvc<T> {
+                    impl<
+                        T: RewireService,
+                    > tonic::server::UnaryService<super::HeartbeatRequest>
+                    for HeartbeatSvc<T> {
                         type Response = super::HeartbeatResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::HeartbeatRequest>,
@@ -339,19 +378,25 @@ pub mod rewire_service_server {
                     };
                     Box::pin(fut)
                 }
-                _ => Box::pin(async move {
-                    let mut response = http::Response::new(tonic::body::Body::default());
-                    let headers = response.headers_mut();
-                    headers.insert(
-                        tonic::Status::GRPC_STATUS,
-                        (tonic::Code::Unimplemented as i32).into(),
-                    );
-                    headers.insert(
-                        http::header::CONTENT_TYPE,
-                        tonic::metadata::GRPC_CONTENT_TYPE,
-                    );
-                    Ok(response)
-                }),
+                _ => {
+                    Box::pin(async move {
+                        let mut response = http::Response::new(
+                            tonic::body::Body::default(),
+                        );
+                        let headers = response.headers_mut();
+                        headers
+                            .insert(
+                                tonic::Status::GRPC_STATUS,
+                                (tonic::Code::Unimplemented as i32).into(),
+                            );
+                        headers
+                            .insert(
+                                http::header::CONTENT_TYPE,
+                                tonic::metadata::GRPC_CONTENT_TYPE,
+                            );
+                        Ok(response)
+                    })
+                }
             }
         }
     }
