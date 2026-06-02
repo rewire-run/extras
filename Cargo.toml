@@ -1,6 +1,6 @@
 [package]
 name = "rewire-extras"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 license = "Apache-2.0"
 description = "Shared Rerun archetypes and types for the Rewire ROS 2 ecosystem"
@@ -10,8 +10,8 @@ repository = "https://github.com/rewire-run/rewire-extras"
 
 [dependencies]
 prost = "0.14"
-re_sdk_types = "0.32"
-re_types_core = "0.32"
+re_sdk_types = "0.33"
+re_types_core = "0.33"
 tonic = { version = "0.14", optional = true }
 tonic-prost = { version = "0.14", optional = true }
 
