@@ -5,10 +5,10 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/rewire-run/rewire-extras/actions/workflows/ci.yaml">
-    <img alt="CI" src="https://github.com/rewire-run/rewire-extras/actions/workflows/ci.yaml/badge.svg">
+  <a href="https://github.com/rewire-run/extras/actions/workflows/ci.yaml">
+    <img alt="CI" src="https://github.com/rewire-run/extras/actions/workflows/ci.yaml/badge.svg">
   </a>
-  <a href="https://github.com/rewire-run/rewire-extras/blob/main/LICENSE">
+  <a href="https://github.com/rewire-run/extras/blob/main/LICENSE">
     <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
   </a>
   <a href="https://pixi.sh">
