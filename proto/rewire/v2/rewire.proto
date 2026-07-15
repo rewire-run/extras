@@ -2,12 +2,16 @@ syntax = "proto3";
 
 package rewire.v2;
 
-// Hosted by the rewire viewer (and, in the future, `rewire serve`).
-// Clients: bridges (heartbeat + identity probe), CLI tools that need
-// viewer-side state.
+// Hosted by the rewire viewer and by `rewire serve` (the headless relay).
+// Clients: bridges (heartbeat + identity probe), viewers and CLI tools
+// that need host-side state.
 service ViewerService {
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  // Active recordings known to the host, derived from bridge heartbeats.
+  rpc ListRecordings(ListRecordingsRequest) returns (ListRecordingsResponse);
+  // Read-side heartbeat query: per-bridge liveness as seen by the host.
+  rpc GetHeartbeats(GetHeartbeatsRequest) returns (GetHeartbeatsResponse);
 }
 
 // Hosted by `rewire record` (the bridge process) on a loopback gRPC
@@ -23,6 +27,12 @@ message GetInfoRequest {}
 message GetInfoResponse {
   string viewer = 1;
   string version = 2;
+  // Seconds since the host process started serving.
+  uint64 uptime_seconds = 3;
+  // Bytes currently held by the host's message buffer, when known.
+  optional uint64 memory_used_bytes = 4;
+  // Configured buffer memory limit in bytes; absent when unlimited.
+  optional uint64 memory_limit_bytes = 5;
 }
 
 enum BridgeState {
@@ -34,9 +44,39 @@ enum BridgeState {
 message HeartbeatRequest {
   string bridge_id = 1;
   BridgeState state = 2;
+  optional string app_id = 3;
+  optional string recording_id = 4;
 }
 
 message HeartbeatResponse {}
+
+message ListRecordingsRequest {}
+
+message ListRecordingsResponse {
+  repeated RecordingEntry recordings = 1;
+}
+
+message RecordingEntry {
+  string bridge_id = 1;
+  string app_id = 2;
+  string recording_id = 3;
+  BridgeState state = 4;
+  // Milliseconds since the last heartbeat from this bridge.
+  uint64 last_seen_millis = 5;
+}
+
+message GetHeartbeatsRequest {}
+
+message GetHeartbeatsResponse {
+  repeated BridgeHeartbeat bridges = 1;
+}
+
+message BridgeHeartbeat {
+  string bridge_id = 1;
+  BridgeState state = 2;
+  // Milliseconds since the last heartbeat from this bridge.
+  uint64 last_seen_millis = 3;
+}
 
 message NewRecordingRequest {
   optional string app_id = 1;

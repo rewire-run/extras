@@ -7,6 +7,15 @@ pub struct GetInfoResponse {
     pub viewer: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub version: ::prost::alloc::string::String,
+    /// Seconds since the host process started serving.
+    #[prost(uint64, tag = "3")]
+    pub uptime_seconds: u64,
+    /// Bytes currently held by the host's message buffer, when known.
+    #[prost(uint64, optional, tag = "4")]
+    pub memory_used_bytes: ::core::option::Option<u64>,
+    /// Configured buffer memory limit in bytes; absent when unlimited.
+    #[prost(uint64, optional, tag = "5")]
+    pub memory_limit_bytes: ::core::option::Option<u64>,
 }
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct HeartbeatRequest {
@@ -14,9 +23,51 @@ pub struct HeartbeatRequest {
     pub bridge_id: ::prost::alloc::string::String,
     #[prost(enumeration = "BridgeState", tag = "2")]
     pub state: i32,
+    #[prost(string, optional, tag = "3")]
+    pub app_id: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "4")]
+    pub recording_id: ::core::option::Option<::prost::alloc::string::String>,
 }
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct HeartbeatResponse {}
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct ListRecordingsRequest {}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ListRecordingsResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub recordings: ::prost::alloc::vec::Vec<RecordingEntry>,
+}
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct RecordingEntry {
+    #[prost(string, tag = "1")]
+    pub bridge_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub app_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub recording_id: ::prost::alloc::string::String,
+    #[prost(enumeration = "BridgeState", tag = "4")]
+    pub state: i32,
+    /// Milliseconds since the last heartbeat from this bridge.
+    #[prost(uint64, tag = "5")]
+    pub last_seen_millis: u64,
+}
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct GetHeartbeatsRequest {}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetHeartbeatsResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub bridges: ::prost::alloc::vec::Vec<BridgeHeartbeat>,
+}
+#[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct BridgeHeartbeat {
+    #[prost(string, tag = "1")]
+    pub bridge_id: ::prost::alloc::string::String,
+    #[prost(enumeration = "BridgeState", tag = "2")]
+    pub state: i32,
+    /// Milliseconds since the last heartbeat from this bridge.
+    #[prost(uint64, tag = "3")]
+    pub last_seen_millis: u64,
+}
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct NewRecordingRequest {
     #[prost(string, optional, tag = "1")]
@@ -125,9 +176,9 @@ pub mod viewer_service_client {
     )]
     use tonic::codegen::http::Uri;
     use tonic::codegen::*;
-    /// Hosted by the rewire viewer (and, in the future, `rewire serve`).
-    /// Clients: bridges (heartbeat + identity probe), CLI tools that need
-    /// viewer-side state.
+    /// Hosted by the rewire viewer and by `rewire serve` (the headless relay).
+    /// Clients: bridges (heartbeat + identity probe), viewers and CLI tools
+    /// that need host-side state.
     #[derive(Debug, Clone)]
     pub struct ViewerServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -235,6 +286,40 @@ pub mod viewer_service_client {
                 .insert(GrpcMethod::new("rewire.v2.ViewerService", "Heartbeat"));
             self.inner.unary(req, path, codec).await
         }
+        /// Active recordings known to the host, derived from bridge heartbeats.
+        pub async fn list_recordings(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ListRecordingsRequest>,
+        ) -> std::result::Result<tonic::Response<super::ListRecordingsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
+            })?;
+            let codec = tonic_prost::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/rewire.v2.ViewerService/ListRecordings");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("rewire.v2.ViewerService", "ListRecordings"));
+            self.inner.unary(req, path, codec).await
+        }
+        /// Read-side heartbeat query: per-bridge liveness as seen by the host.
+        pub async fn get_heartbeats(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetHeartbeatsRequest>,
+        ) -> std::result::Result<tonic::Response<super::GetHeartbeatsResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
+            })?;
+            let codec = tonic_prost::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/rewire.v2.ViewerService/GetHeartbeats");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("rewire.v2.ViewerService", "GetHeartbeats"));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -258,10 +343,20 @@ pub mod viewer_service_server {
             &self,
             request: tonic::Request<super::HeartbeatRequest>,
         ) -> std::result::Result<tonic::Response<super::HeartbeatResponse>, tonic::Status>;
+        /// Active recordings known to the host, derived from bridge heartbeats.
+        async fn list_recordings(
+            &self,
+            request: tonic::Request<super::ListRecordingsRequest>,
+        ) -> std::result::Result<tonic::Response<super::ListRecordingsResponse>, tonic::Status>;
+        /// Read-side heartbeat query: per-bridge liveness as seen by the host.
+        async fn get_heartbeats(
+            &self,
+            request: tonic::Request<super::GetHeartbeatsRequest>,
+        ) -> std::result::Result<tonic::Response<super::GetHeartbeatsResponse>, tonic::Status>;
     }
-    /// Hosted by the rewire viewer (and, in the future, `rewire serve`).
-    /// Clients: bridges (heartbeat + identity probe), CLI tools that need
-    /// viewer-side state.
+    /// Hosted by the rewire viewer and by `rewire serve` (the headless relay).
+    /// Clients: bridges (heartbeat + identity probe), viewers and CLI tools
+    /// that need host-side state.
     #[derive(Debug)]
     pub struct ViewerServiceServer<T> {
         inner: Arc<T>,
@@ -398,6 +493,88 @@ pub mod viewer_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = HeartbeatSvc(inner);
+                        let codec = tonic_prost::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/rewire.v2.ViewerService/ListRecordings" => {
+                    #[allow(non_camel_case_types)]
+                    struct ListRecordingsSvc<T: ViewerService>(pub Arc<T>);
+                    impl<T: ViewerService> tonic::server::UnaryService<super::ListRecordingsRequest>
+                        for ListRecordingsSvc<T>
+                    {
+                        type Response = super::ListRecordingsResponse;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ListRecordingsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewerService>::list_recordings(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = ListRecordingsSvc(inner);
+                        let codec = tonic_prost::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/rewire.v2.ViewerService/GetHeartbeats" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetHeartbeatsSvc<T: ViewerService>(pub Arc<T>);
+                    impl<T: ViewerService> tonic::server::UnaryService<super::GetHeartbeatsRequest>
+                        for GetHeartbeatsSvc<T>
+                    {
+                        type Response = super::GetHeartbeatsResponse;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetHeartbeatsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewerService>::get_heartbeats(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = GetHeartbeatsSvc(inner);
                         let codec = tonic_prost::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
