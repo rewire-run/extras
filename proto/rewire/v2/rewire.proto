@@ -2,15 +2,27 @@ syntax = "proto3";
 
 package rewire.v2;
 
-// Hosted by the rewire viewer and by `rewire serve` (the headless relay).
-// Clients: bridges (heartbeat + identity probe), viewers and CLI tools
-// that need host-side state.
+// Hosted by the rewire viewer. Clients: bridges (heartbeat + identity
+// probe), CLI tools that need viewer-side state.
+//
+// Kept at its v0.5.0 surface. Relay hosts serve RelayService instead;
+// once the viewer becomes a pure client (REW-41 Phase 3) this service is
+// slated for removal in a lean v3.
 service ViewerService {
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
-  // Active recordings known to the host, derived from bridge heartbeats.
+}
+
+// Hosted by `rewire serve` (standalone, or embedded in the bridge): the
+// host/monitoring plane of the relay architecture, served on the same
+// port as Rerun's MessageProxyService. Bridges report in via Heartbeat;
+// viewers and CLI tools query host state.
+service RelayService {
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  // Active recordings known to the relay, derived from bridge heartbeats.
   rpc ListRecordings(ListRecordingsRequest) returns (ListRecordingsResponse);
-  // Read-side heartbeat query: per-bridge liveness as seen by the host.
+  // Read-side heartbeat query: per-bridge liveness as seen by the relay.
   rpc GetHeartbeats(GetHeartbeatsRequest) returns (GetHeartbeatsResponse);
 }
 
@@ -25,6 +37,9 @@ service BridgeService {
 message GetInfoRequest {}
 
 message GetInfoResponse {
+  // Host identity: "rewire" for the viewer, "rewire-serve" for the relay.
+  // (Field name predates RelayService; renaming waits for v3 — the name is
+  // not on the wire.)
   string viewer = 1;
   string version = 2;
   // Seconds since the host process started serving.
