@@ -23,6 +23,19 @@ impl From<i32> for BridgeState {
 struct BridgeEntry {
     last_seen: Instant,
     state: BridgeState,
+    app_id: Option<String>,
+    recording_id: Option<String>,
+}
+
+/// Point-in-time view of one tracked bridge, as returned by
+/// [`HeartbeatTracker::entries`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BridgeStatus {
+    pub bridge_id: String,
+    pub state: BridgeState,
+    pub last_seen: Duration,
+    pub app_id: Option<String>,
+    pub recording_id: Option<String>,
 }
 
 /// Tracks heartbeats from connected bridge instances.
@@ -76,13 +89,48 @@ impl HeartbeatTracker {
     /// If the bridge already exists, its timestamp and state are updated.
     /// Otherwise a new entry is created.
     pub fn beat(&mut self, bridge_id: &str, state: BridgeState) {
+        self.beat_with_recording(bridge_id, state, None, None);
+    }
+
+    /// Records a heartbeat carrying the bridge's recording identity.
+    ///
+    /// Like [`beat`](Self::beat), but also stores the `app_id` and
+    /// `recording_id` the bridge reported, for use by recording listings.
+    pub fn beat_with_recording(
+        &mut self,
+        bridge_id: &str,
+        state: BridgeState,
+        app_id: Option<String>,
+        recording_id: Option<String>,
+    ) {
         self.bridges.insert(
             bridge_id.to_owned(),
             BridgeEntry {
                 last_seen: Instant::now(),
                 state,
+                app_id,
+                recording_id,
             },
         );
+    }
+
+    /// Returns a snapshot of every live bridge after pruning stale entries,
+    /// sorted by bridge id for stable output.
+    pub fn entries(&mut self) -> Vec<BridgeStatus> {
+        self.prune();
+        let mut entries: Vec<BridgeStatus> = self
+            .bridges
+            .iter()
+            .map(|(id, entry)| BridgeStatus {
+                bridge_id: id.clone(),
+                state: entry.state,
+                last_seen: entry.last_seen.elapsed(),
+                app_id: entry.app_id.clone(),
+                recording_id: entry.recording_id.clone(),
+            })
+            .collect();
+        entries.sort_by(|a, b| a.bridge_id.cmp(&b.bridge_id));
+        entries
     }
 
     /// Returns `(connected, bridge_count, aggregate_state)` after pruning stale entries.
@@ -116,6 +164,35 @@ impl HeartbeatTracker {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn entries_snapshot_carries_recording_info() {
+        let mut tracker = HeartbeatTracker::default();
+        tracker.beat_with_recording(
+            "bridge-b",
+            BridgeState::Active,
+            Some("rewire".into()),
+            Some("rec_1".into()),
+        );
+        tracker.beat("bridge-a", BridgeState::Idle);
+
+        let entries = tracker.entries();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].bridge_id, "bridge-a");
+        assert_eq!(entries[0].app_id, None);
+        assert_eq!(entries[1].bridge_id, "bridge-b");
+        assert_eq!(entries[1].state, BridgeState::Active);
+        assert_eq!(entries[1].app_id.as_deref(), Some("rewire"));
+        assert_eq!(entries[1].recording_id.as_deref(), Some("rec_1"));
+    }
+
+    #[test]
+    fn entries_prunes_stale_bridges() {
+        let mut tracker = HeartbeatTracker::with_staleness(Duration::from_millis(50));
+        tracker.beat("bridge-old", BridgeState::Active);
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(tracker.entries().is_empty());
+    }
 
     #[test]
     fn empty_tracker_reports_disconnected() {
