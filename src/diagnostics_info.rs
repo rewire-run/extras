@@ -23,11 +23,12 @@ use re_types_core::{
 ///         bytes_per_sec: 1024.0,
 ///         drops: 0,
 ///         latency_ms: Some(1.5),
+///         max_hz: None,
 ///     },
 /// ];
 /// let info = ROS2DiagnosticsInfo::new(&metrics);
 /// let batches = re_types_core::AsComponents::as_serialized_batches(&info);
-/// assert_eq!(batches.len(), 5);
+/// assert_eq!(batches.len(), 6);
 /// ```
 pub struct ROS2DiagnosticsInfo {
     topic_names: Option<SerializedComponentBatch>,
@@ -35,6 +36,7 @@ pub struct ROS2DiagnosticsInfo {
     bytes_per_sec_values: Option<SerializedComponentBatch>,
     drop_counts: Option<SerializedComponentBatch>,
     latency_ms_values: Option<SerializedComponentBatch>,
+    max_hz_values: Option<SerializedComponentBatch>,
 }
 
 /// Per-topic diagnostics metadata passed to [`ROS2DiagnosticsInfo::new`].
@@ -47,12 +49,16 @@ pub struct ROS2DiagnosticsInfo {
 /// - `drops` — cumulative dropped message count
 /// - `latency_ms` — EMA latency in milliseconds, or `None` when sim time is active
 ///   or no latency data is available
+/// - `max_hz` — the effective rate cap applied by the bridge's per-topic
+///   throttle, or `None` when the topic is unthrottled. `hz` keeps reporting
+///   the wire rate; this column explains why the logged stream updates slower
 pub struct DiagnosticsMeta<'a> {
     pub topic: &'a str,
     pub hz: f64,
     pub bytes_per_sec: f64,
     pub drops: u64,
     pub latency_ms: Option<f64>,
+    pub max_hz: Option<f64>,
 }
 
 impl ROS2DiagnosticsInfo {
@@ -78,6 +84,10 @@ impl ROS2DiagnosticsInfo {
             .iter()
             .map(|m| Text::from(m.latency_ms.map(|v| format!("{v:.1}")).unwrap_or_default()))
             .collect();
+        let max_hz: Vec<Text> = metrics
+            .iter()
+            .map(|m| Text::from(m.max_hz.map(|v| format!("{v:.1}")).unwrap_or_default()))
+            .collect();
 
         Self {
             topic_names: try_serialize_field::<Text>(Self::descriptor_topic_name(), topics),
@@ -88,6 +98,7 @@ impl ROS2DiagnosticsInfo {
             ),
             drop_counts: try_serialize_field::<Text>(Self::descriptor_drops(), drops),
             latency_ms_values: try_serialize_field::<Text>(Self::descriptor_latency_ms(), latency),
+            max_hz_values: try_serialize_field::<Text>(Self::descriptor_max_hz(), max_hz),
         }
     }
 
@@ -120,6 +131,12 @@ impl ROS2DiagnosticsInfo {
         ComponentDescriptor::partial("rewire.ROS2DiagnosticsInfo:latency_ms")
             .with_archetype("rewire.ROS2DiagnosticsInfo".into())
     }
+
+    /// Returns the [`ComponentDescriptor`] for the rate-cap column.
+    pub fn descriptor_max_hz() -> ComponentDescriptor {
+        ComponentDescriptor::partial("rewire.ROS2DiagnosticsInfo:max_hz")
+            .with_archetype("rewire.ROS2DiagnosticsInfo".into())
+    }
 }
 
 impl AsComponents for ROS2DiagnosticsInfo {
@@ -130,6 +147,7 @@ impl AsComponents for ROS2DiagnosticsInfo {
             &self.bytes_per_sec_values,
             &self.drop_counts,
             &self.latency_ms_values,
+            &self.max_hz_values,
         ]
         .into_iter()
         .flatten()
@@ -151,6 +169,7 @@ mod tests {
                 bytes_per_sec: 1024.0,
                 drops: 0,
                 latency_ms: Some(1.5),
+                max_hz: None,
             },
             DiagnosticsMeta {
                 topic: "/odom",
@@ -158,11 +177,12 @@ mod tests {
                 bytes_per_sec: 4096.0,
                 drops: 3,
                 latency_ms: None,
+                max_hz: Some(30.0),
             },
         ];
         let info = ROS2DiagnosticsInfo::new(&metrics);
         let batches = info.as_serialized_batches();
-        assert_eq!(batches.len(), 5);
+        assert_eq!(batches.len(), 6);
     }
 
     #[test]
@@ -188,6 +208,7 @@ mod tests {
             ROS2DiagnosticsInfo::descriptor_bytes_per_sec(),
             ROS2DiagnosticsInfo::descriptor_drops(),
             ROS2DiagnosticsInfo::descriptor_latency_ms(),
+            ROS2DiagnosticsInfo::descriptor_max_hz(),
         ];
         for (i, a) in descs.iter().enumerate() {
             for (j, b) in descs.iter().enumerate() {
