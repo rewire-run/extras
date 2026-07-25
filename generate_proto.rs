@@ -1,6 +1,7 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     generate("v1", "proto/rewire/v1/rewire.proto", "rewire.v1.rs")?;
     generate("v2", "proto/rewire/v2/rewire.proto", "rewire.v2.rs")?;
+    generate("v3", "proto/rewire/v3/rewire.proto", "rewire.v3.rs")?;
     Ok(())
 }
 

@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package rewire.v1;
 
+// Superseded by rewire.v3 (bridge 0.7.0). Kept published for older
+// binaries; no current rewire binary speaks it. Hosted by 0.5.x viewers
+// on the `grpc_port + 1` service port convention.
+
 service RewireService {
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);

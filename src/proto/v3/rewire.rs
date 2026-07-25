@@ -3,11 +3,9 @@
 pub struct GetInfoRequest {}
 #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct GetInfoResponse {
-    /// Host identity: "rewire" for the viewer, "rewire-serve" for the relay.
-    /// (Field name predates RelayService; v3 renames it to `host` — the name
-    /// is not on the wire.)
+    /// Host identity: "rewire-serve" for the relay.
     #[prost(string, tag = "1")]
-    pub viewer: ::prost::alloc::string::String,
+    pub host: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub version: ::prost::alloc::string::String,
     /// Seconds since the host process started serving.
@@ -169,343 +167,6 @@ impl BridgeState {
     }
 }
 /// Generated client implementations.
-pub mod viewer_service_client {
-    #![allow(
-        unused_variables,
-        dead_code,
-        missing_docs,
-        clippy::wildcard_imports,
-        clippy::let_unit_value
-    )]
-    use tonic::codegen::http::Uri;
-    use tonic::codegen::*;
-    /// Hosted by the 0.5.x rewire viewer. Clients: bridges (heartbeat +
-    /// identity probe), CLI tools that need viewer-side state.
-    ///
-    /// Kept at its v0.5.0 surface. Viewers are pure relay clients since
-    /// rewire-viewer 0.6.0; v3 drops this service.
-    #[derive(Debug, Clone)]
-    pub struct ViewerServiceClient<T> {
-        inner: tonic::client::Grpc<T>,
-    }
-    impl ViewerServiceClient<tonic::transport::Channel> {
-        /// Attempt to create a new client by connecting to a given endpoint.
-        pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
-        where
-            D: TryInto<tonic::transport::Endpoint>,
-            D::Error: Into<StdError>,
-        {
-            let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
-            Ok(Self::new(conn))
-        }
-    }
-    impl<T> ViewerServiceClient<T>
-    where
-        T: tonic::client::GrpcService<tonic::body::Body>,
-        T::Error: Into<StdError>,
-        T::ResponseBody: Body<Data = Bytes> + std::marker::Send + 'static,
-        <T::ResponseBody as Body>::Error: Into<StdError> + std::marker::Send,
-    {
-        pub fn new(inner: T) -> Self {
-            let inner = tonic::client::Grpc::new(inner);
-            Self { inner }
-        }
-        pub fn with_origin(inner: T, origin: Uri) -> Self {
-            let inner = tonic::client::Grpc::with_origin(inner, origin);
-            Self { inner }
-        }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> ViewerServiceClient<InterceptedService<T, F>>
-        where
-            F: tonic::service::Interceptor,
-            T::ResponseBody: Default,
-            T: tonic::codegen::Service<
-                http::Request<tonic::body::Body>,
-                Response = http::Response<
-                    <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
-                >,
-            >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::Body>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
-        {
-            ViewerServiceClient::new(InterceptedService::new(inner, interceptor))
-        }
-        /// Compress requests with the given encoding.
-        ///
-        /// This requires the server to support it otherwise it might respond with an
-        /// error.
-        #[must_use]
-        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
-            self.inner = self.inner.send_compressed(encoding);
-            self
-        }
-        /// Enable decompressing responses.
-        #[must_use]
-        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
-            self.inner = self.inner.accept_compressed(encoding);
-            self
-        }
-        /// Limits the maximum size of a decoded message.
-        ///
-        /// Default: `4MB`
-        #[must_use]
-        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
-            self.inner = self.inner.max_decoding_message_size(limit);
-            self
-        }
-        /// Limits the maximum size of an encoded message.
-        ///
-        /// Default: `usize::MAX`
-        #[must_use]
-        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
-            self.inner = self.inner.max_encoding_message_size(limit);
-            self
-        }
-        pub async fn get_info(
-            &mut self,
-            request: impl tonic::IntoRequest<super::GetInfoRequest>,
-        ) -> std::result::Result<tonic::Response<super::GetInfoResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
-            let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/rewire.v2.ViewerService/GetInfo");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.ViewerService", "GetInfo"));
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn heartbeat(
-            &mut self,
-            request: impl tonic::IntoRequest<super::HeartbeatRequest>,
-        ) -> std::result::Result<tonic::Response<super::HeartbeatResponse>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
-            let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/rewire.v2.ViewerService/Heartbeat");
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.ViewerService", "Heartbeat"));
-            self.inner.unary(req, path, codec).await
-        }
-    }
-}
-/// Generated server implementations.
-pub mod viewer_service_server {
-    #![allow(
-        unused_variables,
-        dead_code,
-        missing_docs,
-        clippy::wildcard_imports,
-        clippy::let_unit_value
-    )]
-    use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with ViewerServiceServer.
-    #[async_trait]
-    pub trait ViewerService: std::marker::Send + std::marker::Sync + 'static {
-        async fn get_info(
-            &self,
-            request: tonic::Request<super::GetInfoRequest>,
-        ) -> std::result::Result<tonic::Response<super::GetInfoResponse>, tonic::Status>;
-        async fn heartbeat(
-            &self,
-            request: tonic::Request<super::HeartbeatRequest>,
-        ) -> std::result::Result<tonic::Response<super::HeartbeatResponse>, tonic::Status>;
-    }
-    /// Hosted by the 0.5.x rewire viewer. Clients: bridges (heartbeat +
-    /// identity probe), CLI tools that need viewer-side state.
-    ///
-    /// Kept at its v0.5.0 surface. Viewers are pure relay clients since
-    /// rewire-viewer 0.6.0; v3 drops this service.
-    #[derive(Debug)]
-    pub struct ViewerServiceServer<T> {
-        inner: Arc<T>,
-        accept_compression_encodings: EnabledCompressionEncodings,
-        send_compression_encodings: EnabledCompressionEncodings,
-        max_decoding_message_size: Option<usize>,
-        max_encoding_message_size: Option<usize>,
-    }
-    impl<T> ViewerServiceServer<T> {
-        pub fn new(inner: T) -> Self {
-            Self::from_arc(Arc::new(inner))
-        }
-        pub fn from_arc(inner: Arc<T>) -> Self {
-            Self {
-                inner,
-                accept_compression_encodings: Default::default(),
-                send_compression_encodings: Default::default(),
-                max_decoding_message_size: None,
-                max_encoding_message_size: None,
-            }
-        }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
-        where
-            F: tonic::service::Interceptor,
-        {
-            InterceptedService::new(Self::new(inner), interceptor)
-        }
-        /// Enable decompressing requests with the given encoding.
-        #[must_use]
-        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
-            self.accept_compression_encodings.enable(encoding);
-            self
-        }
-        /// Compress responses with the given encoding, if the client supports it.
-        #[must_use]
-        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
-            self.send_compression_encodings.enable(encoding);
-            self
-        }
-        /// Limits the maximum size of a decoded message.
-        ///
-        /// Default: `4MB`
-        #[must_use]
-        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
-            self.max_decoding_message_size = Some(limit);
-            self
-        }
-        /// Limits the maximum size of an encoded message.
-        ///
-        /// Default: `usize::MAX`
-        #[must_use]
-        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
-            self.max_encoding_message_size = Some(limit);
-            self
-        }
-    }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for ViewerServiceServer<T>
-    where
-        T: ViewerService,
-        B: Body + std::marker::Send + 'static,
-        B::Error: Into<StdError> + std::marker::Send + 'static,
-    {
-        type Response = http::Response<tonic::body::Body>;
-        type Error = std::convert::Infallible;
-        type Future = BoxFuture<Self::Response, Self::Error>;
-        fn poll_ready(
-            &mut self,
-            _cx: &mut Context<'_>,
-        ) -> Poll<std::result::Result<(), Self::Error>> {
-            Poll::Ready(Ok(()))
-        }
-        fn call(&mut self, req: http::Request<B>) -> Self::Future {
-            match req.uri().path() {
-                "/rewire.v2.ViewerService/GetInfo" => {
-                    #[allow(non_camel_case_types)]
-                    struct GetInfoSvc<T: ViewerService>(pub Arc<T>);
-                    impl<T: ViewerService> tonic::server::UnaryService<super::GetInfoRequest> for GetInfoSvc<T> {
-                        type Response = super::GetInfoResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::GetInfoRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as ViewerService>::get_info(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = GetInfoSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/rewire.v2.ViewerService/Heartbeat" => {
-                    #[allow(non_camel_case_types)]
-                    struct HeartbeatSvc<T: ViewerService>(pub Arc<T>);
-                    impl<T: ViewerService> tonic::server::UnaryService<super::HeartbeatRequest> for HeartbeatSvc<T> {
-                        type Response = super::HeartbeatResponse;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::HeartbeatRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as ViewerService>::heartbeat(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = HeartbeatSvc(inner);
-                        let codec = tonic_prost::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                _ => Box::pin(async move {
-                    let mut response = http::Response::new(tonic::body::Body::default());
-                    let headers = response.headers_mut();
-                    headers.insert(
-                        tonic::Status::GRPC_STATUS,
-                        (tonic::Code::Unimplemented as i32).into(),
-                    );
-                    headers.insert(
-                        http::header::CONTENT_TYPE,
-                        tonic::metadata::GRPC_CONTENT_TYPE,
-                    );
-                    Ok(response)
-                }),
-            }
-        }
-    }
-    impl<T> Clone for ViewerServiceServer<T> {
-        fn clone(&self) -> Self {
-            let inner = self.inner.clone();
-            Self {
-                inner,
-                accept_compression_encodings: self.accept_compression_encodings,
-                send_compression_encodings: self.send_compression_encodings,
-                max_decoding_message_size: self.max_decoding_message_size,
-                max_encoding_message_size: self.max_encoding_message_size,
-            }
-        }
-    }
-    /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "rewire.v2.ViewerService";
-    impl<T> tonic::server::NamedService for ViewerServiceServer<T> {
-        const NAME: &'static str = SERVICE_NAME;
-    }
-}
-/// Generated client implementations.
 pub mod relay_service_client {
     #![allow(
         unused_variables,
@@ -607,10 +268,10 @@ pub mod relay_service_client {
                 tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
             })?;
             let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/rewire.v2.RelayService/GetInfo");
+            let path = http::uri::PathAndQuery::from_static("/rewire.v3.RelayService/GetInfo");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.RelayService", "GetInfo"));
+                .insert(GrpcMethod::new("rewire.v3.RelayService", "GetInfo"));
             self.inner.unary(req, path, codec).await
         }
         pub async fn heartbeat(
@@ -621,10 +282,10 @@ pub mod relay_service_client {
                 tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
             })?;
             let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/rewire.v2.RelayService/Heartbeat");
+            let path = http::uri::PathAndQuery::from_static("/rewire.v3.RelayService/Heartbeat");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.RelayService", "Heartbeat"));
+                .insert(GrpcMethod::new("rewire.v3.RelayService", "Heartbeat"));
             self.inner.unary(req, path, codec).await
         }
         /// Active recordings known to the relay, derived from bridge heartbeats.
@@ -638,10 +299,10 @@ pub mod relay_service_client {
             })?;
             let codec = tonic_prost::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/rewire.v2.RelayService/ListRecordings");
+                http::uri::PathAndQuery::from_static("/rewire.v3.RelayService/ListRecordings");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.RelayService", "ListRecordings"));
+                .insert(GrpcMethod::new("rewire.v3.RelayService", "ListRecordings"));
             self.inner.unary(req, path, codec).await
         }
         /// Read-side heartbeat query: per-bridge liveness as seen by the relay.
@@ -655,10 +316,10 @@ pub mod relay_service_client {
             })?;
             let codec = tonic_prost::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/rewire.v2.RelayService/GetHeartbeats");
+                http::uri::PathAndQuery::from_static("/rewire.v3.RelayService/GetHeartbeats");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.RelayService", "GetHeartbeats"));
+                .insert(GrpcMethod::new("rewire.v3.RelayService", "GetHeartbeats"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -772,7 +433,7 @@ pub mod relay_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/rewire.v2.RelayService/GetInfo" => {
+                "/rewire.v3.RelayService/GetInfo" => {
                     #[allow(non_camel_case_types)]
                     struct GetInfoSvc<T: RelayService>(pub Arc<T>);
                     impl<T: RelayService> tonic::server::UnaryService<super::GetInfoRequest> for GetInfoSvc<T> {
@@ -810,7 +471,7 @@ pub mod relay_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/rewire.v2.RelayService/Heartbeat" => {
+                "/rewire.v3.RelayService/Heartbeat" => {
                     #[allow(non_camel_case_types)]
                     struct HeartbeatSvc<T: RelayService>(pub Arc<T>);
                     impl<T: RelayService> tonic::server::UnaryService<super::HeartbeatRequest> for HeartbeatSvc<T> {
@@ -849,7 +510,7 @@ pub mod relay_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/rewire.v2.RelayService/ListRecordings" => {
+                "/rewire.v3.RelayService/ListRecordings" => {
                     #[allow(non_camel_case_types)]
                     struct ListRecordingsSvc<T: RelayService>(pub Arc<T>);
                     impl<T: RelayService> tonic::server::UnaryService<super::ListRecordingsRequest>
@@ -890,7 +551,7 @@ pub mod relay_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/rewire.v2.RelayService/GetHeartbeats" => {
+                "/rewire.v3.RelayService/GetHeartbeats" => {
                     #[allow(non_camel_case_types)]
                     struct GetHeartbeatsSvc<T: RelayService>(pub Arc<T>);
                     impl<T: RelayService> tonic::server::UnaryService<super::GetHeartbeatsRequest>
@@ -960,7 +621,7 @@ pub mod relay_service_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "rewire.v2.RelayService";
+    pub const SERVICE_NAME: &str = "rewire.v3.RelayService";
     impl<T> tonic::server::NamedService for RelayServiceServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }
@@ -1067,10 +728,10 @@ pub mod bridge_service_client {
             })?;
             let codec = tonic_prost::ProstCodec::default();
             let path =
-                http::uri::PathAndQuery::from_static("/rewire.v2.BridgeService/NewRecording");
+                http::uri::PathAndQuery::from_static("/rewire.v3.BridgeService/NewRecording");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.BridgeService", "NewRecording"));
+                .insert(GrpcMethod::new("rewire.v3.BridgeService", "NewRecording"));
             self.inner.unary(req, path, codec).await
         }
         pub async fn list_topics(
@@ -1082,10 +743,10 @@ pub mod bridge_service_client {
                 tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
             })?;
             let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/rewire.v2.BridgeService/ListTopics");
+            let path = http::uri::PathAndQuery::from_static("/rewire.v3.BridgeService/ListTopics");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.BridgeService", "ListTopics"));
+                .insert(GrpcMethod::new("rewire.v3.BridgeService", "ListTopics"));
             self.inner.unary(req, path, codec).await
         }
         pub async fn get_graph(
@@ -1096,10 +757,10 @@ pub mod bridge_service_client {
                 tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
             })?;
             let codec = tonic_prost::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/rewire.v2.BridgeService/GetGraph");
+            let path = http::uri::PathAndQuery::from_static("/rewire.v3.BridgeService/GetGraph");
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("rewire.v2.BridgeService", "GetGraph"));
+                .insert(GrpcMethod::new("rewire.v3.BridgeService", "GetGraph"));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -1205,7 +866,7 @@ pub mod bridge_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/rewire.v2.BridgeService/NewRecording" => {
+                "/rewire.v3.BridgeService/NewRecording" => {
                     #[allow(non_camel_case_types)]
                     struct NewRecordingSvc<T: BridgeService>(pub Arc<T>);
                     impl<T: BridgeService> tonic::server::UnaryService<super::NewRecordingRequest>
@@ -1246,7 +907,7 @@ pub mod bridge_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/rewire.v2.BridgeService/ListTopics" => {
+                "/rewire.v3.BridgeService/ListTopics" => {
                     #[allow(non_camel_case_types)]
                     struct ListTopicsSvc<T: BridgeService>(pub Arc<T>);
                     impl<T: BridgeService> tonic::server::UnaryService<super::ListTopicsRequest> for ListTopicsSvc<T> {
@@ -1285,7 +946,7 @@ pub mod bridge_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/rewire.v2.BridgeService/GetGraph" => {
+                "/rewire.v3.BridgeService/GetGraph" => {
                     #[allow(non_camel_case_types)]
                     struct GetGraphSvc<T: BridgeService>(pub Arc<T>);
                     impl<T: BridgeService> tonic::server::UnaryService<super::GetGraphRequest> for GetGraphSvc<T> {
@@ -1353,7 +1014,7 @@ pub mod bridge_service_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "rewire.v2.BridgeService";
+    pub const SERVICE_NAME: &str = "rewire.v3.BridgeService";
     impl<T> tonic::server::NamedService for BridgeServiceServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }

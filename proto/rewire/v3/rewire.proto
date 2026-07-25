@@ -1,19 +1,10 @@
 syntax = "proto3";
 
-package rewire.v2;
+package rewire.v3;
 
-// Superseded by rewire.v3 (bridge 0.7.0). Kept published for older
-// binaries; no current rewire binary speaks it.
-
-// Hosted by the 0.5.x rewire viewer. Clients: bridges (heartbeat +
-// identity probe), CLI tools that need viewer-side state.
-//
-// Kept at its v0.5.0 surface. Viewers are pure relay clients since
-// rewire-viewer 0.6.0; v3 drops this service.
-service ViewerService {
-  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
-  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
-}
+// The lean successor to rewire.v2: ViewerService is gone (viewers are pure
+// relay clients since rewire-viewer 0.6.0) and GetInfoResponse.viewer is now
+// named for what it identifies.
 
 // Hosted by `rewire serve` (standalone, or embedded in the bridge): the
 // host/monitoring plane of the relay architecture, served on the same
@@ -39,10 +30,8 @@ service BridgeService {
 message GetInfoRequest {}
 
 message GetInfoResponse {
-  // Host identity: "rewire" for the viewer, "rewire-serve" for the relay.
-  // (Field name predates RelayService; v3 renames it to `host` — the name
-  // is not on the wire.)
-  string viewer = 1;
+  // Host identity: "rewire-serve" for the relay.
+  string host = 1;
   string version = 2;
   // Seconds since the host process started serving.
   uint64 uptime_seconds = 3;
