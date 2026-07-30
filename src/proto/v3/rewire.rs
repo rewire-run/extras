@@ -53,6 +53,16 @@ pub struct RecordingEntry {
     pub last_seen_millis: u64,
 }
 #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct WatchReadersRequest {}
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
+pub struct ReaderEvent {
+    /// Total message-stream readers accepted since the relay started.
+    /// Monotonic within one relay process. A value lower than previously seen
+    /// means the relay restarted.
+    #[prost(uint64, tag = "1")]
+    pub joins: u64,
+}
+#[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
 pub struct GetHeartbeatsRequest {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetHeartbeatsResponse {
@@ -322,6 +332,28 @@ pub mod relay_service_client {
                 .insert(GrpcMethod::new("rewire.v3.RelayService", "GetHeartbeats"));
             self.inner.unary(req, path, codec).await
         }
+        /// Reader-join notifications: one event per new reader of the relay's
+        /// message stream (a viewer is the typical reader, a data-platform
+        /// uploader another). The stream opens with one event carrying the
+        /// current join count. Events are broadcast to every watcher and carry
+        /// no reader identity.
+        pub async fn watch_readers(
+            &mut self,
+            request: impl tonic::IntoRequest<super::WatchReadersRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::ReaderEvent>>,
+            tonic::Status,
+        > {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
+            })?;
+            let codec = tonic_prost::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/rewire.v3.RelayService/WatchReaders");
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("rewire.v3.RelayService", "WatchReaders"));
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -355,6 +387,20 @@ pub mod relay_service_server {
             &self,
             request: tonic::Request<super::GetHeartbeatsRequest>,
         ) -> std::result::Result<tonic::Response<super::GetHeartbeatsResponse>, tonic::Status>;
+        /// Server streaming response type for the WatchReaders method.
+        type WatchReadersStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::ReaderEvent, tonic::Status>,
+            > + std::marker::Send
+            + 'static;
+        /// Reader-join notifications: one event per new reader of the relay's
+        /// message stream (a viewer is the typical reader, a data-platform
+        /// uploader another). The stream opens with one event carrying the
+        /// current join count. Events are broadcast to every watcher and carry
+        /// no reader identity.
+        async fn watch_readers(
+            &self,
+            request: tonic::Request<super::WatchReadersRequest>,
+        ) -> std::result::Result<tonic::Response<Self::WatchReadersStream>, tonic::Status>;
     }
     /// Hosted by `rewire serve` (standalone, or embedded in the bridge): the
     /// host/monitoring plane of the relay architecture, served on the same
@@ -588,6 +634,50 @@ pub mod relay_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/rewire.v3.RelayService/WatchReaders" => {
+                    #[allow(non_camel_case_types)]
+                    struct WatchReadersSvc<T: RelayService>(pub Arc<T>);
+                    impl<T: RelayService>
+                        tonic::server::ServerStreamingService<super::WatchReadersRequest>
+                        for WatchReadersSvc<T>
+                    {
+                        type Response = super::ReaderEvent;
+                        type ResponseStream = T::WatchReadersStream;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::WatchReadersRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as RelayService>::watch_readers(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = WatchReadersSvc(inner);
+                        let codec = tonic_prost::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

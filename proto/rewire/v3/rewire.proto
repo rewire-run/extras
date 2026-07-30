@@ -17,6 +17,12 @@ service RelayService {
   rpc ListRecordings(ListRecordingsRequest) returns (ListRecordingsResponse);
   // Read-side heartbeat query: per-bridge liveness as seen by the relay.
   rpc GetHeartbeats(GetHeartbeatsRequest) returns (GetHeartbeatsResponse);
+  // Reader-join notifications: one event per new reader of the relay's
+  // message stream (a viewer is the typical reader, a data-platform
+  // uploader another). The stream opens with one event carrying the
+  // current join count. Events are broadcast to every watcher and carry
+  // no reader identity.
+  rpc WatchReaders(WatchReadersRequest) returns (stream ReaderEvent);
 }
 
 // Hosted by `rewire record` (the bridge process) on a loopback gRPC
@@ -69,6 +75,15 @@ message RecordingEntry {
   BridgeState state = 4;
   // Milliseconds since the last heartbeat from this bridge.
   uint64 last_seen_millis = 5;
+}
+
+message WatchReadersRequest {}
+
+message ReaderEvent {
+  // Total message-stream readers accepted since the relay started.
+  // Monotonic within one relay process. A value lower than previously seen
+  // means the relay restarted.
+  uint64 joins = 1;
 }
 
 message GetHeartbeatsRequest {}
