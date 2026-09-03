@@ -14,7 +14,7 @@ sanity = { depends-on = ["check", "fmt", "lint", "test"] }
 generate-proto = "cargo run --bin generate-proto --features codegen"
 
 [feature.dev.dependencies]
-rust = ">=1.95"
+rust = ">=1.96"
 rerun-sdk = ">=0.30"
 protobuf = "*"
 
