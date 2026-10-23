@@ -10,26 +10,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  fmt:
-    name: format
+  style:
+    name: style
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v6
       - uses: rewire-run/actions/setup-rust@v1
         with:
-          components: rustfmt
-          cache: "false"
+          components: rustfmt, clippy
       - run: cargo fmt --check
-
-  clippy:
-    name: clippy
-    runs-on: blacksmith-2vcpu-ubuntu-2404
-    steps:
-      - uses: actions/checkout@v6
-      - uses: rewire-run/actions/setup-rust@v1
-        with:
-          components: clippy
-      - run: cargo clippy --all-features --all-targets -- -D warnings
+      - if: ${{ !cancelled() }}
+        run: cargo clippy --all-features --all-targets -- -D warnings
 
   test:
     name: test
