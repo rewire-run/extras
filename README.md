@@ -5,15 +5,9 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/rewire-run/extras/actions/workflows/ci.yaml">
-    <img alt="CI" src="https://github.com/rewire-run/extras/actions/workflows/ci.yaml/badge.svg">
-  </a>
-  <a href="https://github.com/rewire-run/extras/blob/main/LICENSE">
-    <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
-  </a>
-  <a href="https://pixi.sh">
-    <img alt="Powered by" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json">
-  </a>
+  <a href="https://github.com/rewire-run/extras/actions/workflows/ci.yaml"><img alt="CI" src="https://github.com/rewire-run/extras/actions/workflows/ci.yaml/badge.svg"></a>
+  <a href="https://github.com/rewire-run/extras/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+  <a href="https://pixi.sh"><img alt="Powered by" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/prefix-dev/pixi/main/assets/badge/v0.json"></a>
 </p>
 
 Shared types for the [Rewire](https://rewire.run) ecosystem. Provides custom
